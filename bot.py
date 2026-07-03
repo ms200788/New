@@ -7,7 +7,8 @@ from telebot import types
 
 # ================== ENV ==================
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-PORT = 10000
+# Render populates PORT dynamically, default to 10000 locally
+PORT = int(os.getenv("PORT", 10000))
 
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode="HTML")
 
@@ -318,9 +319,16 @@ def done(m):
 app = Flask(__name__)
 
 @app.route("/health")
+@app.route("/")
 def health():
-    return "OK"
+    return "OK", 200
+
+def run_flask():
+    # Production-ready execution binding to host 0.0.0.0 on Render's port
+    app.run(host="0.0.0.0", port=PORT)
 
 if __name__ == "__main__":
+    # Create background daemon for web traffic
     threading.Thread(target=run_flask, daemon=True).start()
+    # Main thread runs Telebot blocking loops
     bot.infinity_polling(skip_pending=True)
